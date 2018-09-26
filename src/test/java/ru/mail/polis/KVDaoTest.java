@@ -144,7 +144,7 @@ public class KVDaoTest extends TestBase {
     }
 
     @Test(expected = NoSuchElementException.class)
-    public void remove() throws IOException, Exception {
+    public void remove() throws Exception {
         final byte[] key = randomKey();
         final byte[] value = randomValue();
         dao.upsert(key, value);

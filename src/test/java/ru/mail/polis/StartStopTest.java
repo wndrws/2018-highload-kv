@@ -87,7 +87,7 @@ public class StartStopTest extends TestBase {
     }
 
     @Test
-    public void stop() throws Exception {
+    public void stop() {
         storage.stop();
         try {
             // Should not respond after stop
