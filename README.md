@@ -30,7 +30,7 @@ $ gradle run
 
 **ВНИМАНИЕ!** При запуске тестов или сервера в IDE необходимо передавать Java опцию `-Xmx128m`. 
 
-В своё Java package `ru.mail.polis.<username>` реализуйте интерфейс [`KVService`](src/main/java/ru/mail/polis/KVService.java) и поддержите следующий HTTP REST API протокол:
+В своём Java package `ru.mail.polis.<username>` реализуйте интерфейс [`KVService`](src/main/java/ru/mail/polis/KVService.java) и поддержите следующий HTTP REST API протокол:
 * HTTP `GET /v0/entity?id=<ID>` -- получить данные по ключу `<ID>`. Возвращает `200 OK` и данные или `404 Not Found`.
 * HTTP `PUT /v0/entity?id=<ID>` -- создать/перезаписать (upsert) данные по ключу `<ID>`. Возвращает `201 Created`.
 * HTTP `DELETE /v0/entity?id=<ID>` -- удалить данные по ключу `<ID>`. Возвращает `202 Accepted`.
@@ -42,6 +42,8 @@ $ gradle run
 ### Report
 Когда всё будет готово, присылайте pull request со своей реализацией на review. Не забывайте **отвечать на комментарии в PR** и **исправлять замечания**!
 
-## Этап 2. TBD (deadline 2018-11-07)
+## Этап 2. TBD (deadline 2018-10-31)
 
-## Этап 3. TBD (deadline 2018-12-05)
+## Этап 3. TBD (deadline 2018-11-14)
+
+## Этап 4. TBD (deadline 2018-12-05)
