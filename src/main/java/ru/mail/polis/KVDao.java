@@ -16,32 +16,24 @@
 
 package ru.mail.polis;
 
-import org.junit.Test;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
+import java.io.Closeable;
 import java.io.IOException;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import java.util.NoSuchElementException;
 
 /**
- * Unit tests for {@link Files} facilities
+ * Key-value DAO API
  *
- * @author Vadim Tsesko <mail@incubos.org>
+ * @author Vadim Tsesko <incubos@yandex.com>
  */
-public class FilesTest {
-    @Test
-    public void createRemove() throws IOException {
-        final File dir = Files.createTempDirectory();
-        assertTrue(dir.exists());
-        assertTrue(dir.isDirectory());
+public interface KVDao extends Closeable {
+    @NotNull
+    byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException;
 
-        final File data = new File(dir, "data");
-        assertFalse(data.exists());
-        assertTrue(data.createNewFile());
-        assertTrue(data.isFile());
+    void upsert(
+            @NotNull byte[] key,
+            @NotNull byte[] value) throws IOException;
 
-        Files.recursiveDelete(dir);
-        assertFalse(dir.exists());
-    }
+    void remove(@NotNull byte[] key) throws IOException;
 }

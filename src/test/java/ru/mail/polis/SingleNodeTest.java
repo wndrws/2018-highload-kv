@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 (c) Vadim Tsesko <incubos@yandex.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package ru.mail.polis;
 
 import org.apache.http.HttpResponse;
@@ -18,26 +34,29 @@ import static org.junit.Assert.assertEquals;
 /**
  * Unit tests for single node {@link KVService} API
  *
- * @author Vadim Tsesko <mail@incubos.org>
+ * @author Vadim Tsesko <incubos@yandex.com>
  */
 public class SingleNodeTest extends TestBase {
     private static int port;
     private static File data;
+    private static KVDao dao;
     private static KVService storage;
     @Rule
     public final Timeout globalTimeout = Timeout.seconds(3);
 
     @BeforeClass
-    public static void beforeAll() throws IOException, InterruptedException {
+    public static void beforeAll() throws IOException {
         port = randomPort();
         data = Files.createTempDirectory();
-        storage = KVServiceFactory.create(port, data);
+        dao = KVDaoFactory.create(data);
+        storage = KVServiceFactory.create(port, dao);
         storage.start();
     }
 
     @AfterClass
     public static void afterAll() throws IOException {
         storage.stop();
+        dao.close();
         Files.recursiveDelete(data);
     }
 
@@ -89,7 +108,7 @@ public class SingleNodeTest extends TestBase {
 
     @Test
     public void insert() throws Exception {
-        final String key = randomKey();
+        final String key = randomId();
         final byte[] value = randomValue();
 
         // Insert
@@ -103,7 +122,7 @@ public class SingleNodeTest extends TestBase {
 
     @Test
     public void insertEmpty() throws Exception {
-        final String key = randomKey();
+        final String key = randomId();
         final byte[] value = new byte[0];
 
         // Insert
@@ -117,9 +136,9 @@ public class SingleNodeTest extends TestBase {
 
     @Test
     public void lifecycle2keys() throws Exception {
-        final String key1 = randomKey();
+        final String key1 = randomId();
         final byte[] value1 = randomValue();
-        final String key2 = randomKey();
+        final String key2 = randomId();
         final byte[] value2 = randomValue();
 
         // Insert 1
@@ -151,7 +170,7 @@ public class SingleNodeTest extends TestBase {
 
     @Test
     public void upsert() throws Exception {
-        final String key = randomKey();
+        final String key = randomId();
         final byte[] value1 = randomValue();
         final byte[] value2 = randomValue();
 
@@ -169,7 +188,7 @@ public class SingleNodeTest extends TestBase {
 
     @Test
     public void upsertEmpty() throws Exception {
-        final String key = randomKey();
+        final String key = randomId();
         final byte[] value = randomValue();
         final byte[] empty = new byte[0];
 
@@ -187,7 +206,7 @@ public class SingleNodeTest extends TestBase {
 
     @Test
     public void delete() throws Exception {
-        final String key = randomKey();
+        final String key = randomId();
         final byte[] value = randomValue();
 
         // Insert

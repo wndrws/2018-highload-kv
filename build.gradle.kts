@@ -23,7 +23,7 @@ dependencies {
 
 tasks {
     "test"(Test::class) {
-        maxHeapSize = "1g"
+        maxHeapSize = "128m"
     }
 }
 
@@ -32,5 +32,5 @@ application {
     mainClassName = "ru.mail.polis.Server"
 
     // And limit Xmx
-    applicationDefaultJvmArgs = listOf("-Xmx1g")
+    applicationDefaultJvmArgs = listOf("-Xmx128m")
 }

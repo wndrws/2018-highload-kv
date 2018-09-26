@@ -5,7 +5,7 @@ jdk: openjdk8
 
 env:
    global:
-   - _JAVA_OPTIONS="-Xmx1g"
+   - _JAVA_OPTIONS="-Xmx128m"
 
 script: ./gradlew --info test
 
