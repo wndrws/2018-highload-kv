@@ -17,7 +17,6 @@
 package ru.mail.polis;
 
 import org.apache.http.client.fluent.Request;
-import org.apache.http.conn.HttpHostConnectException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -28,7 +27,6 @@ import org.junit.runners.MethodSorters;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -77,7 +75,7 @@ public class StartStopTest extends TestBase {
         try {
             // Should not respond before start
             status();
-        } catch (SocketTimeoutException e) {
+        } catch (IOException e) {
             // Do nothing
         }
     }
@@ -94,7 +92,7 @@ public class StartStopTest extends TestBase {
         try {
             // Should not respond after stop
             status();
-        } catch (SocketTimeoutException | HttpHostConnectException e) {
+        } catch (IOException e) {
             // Do nothing
         }
     }
