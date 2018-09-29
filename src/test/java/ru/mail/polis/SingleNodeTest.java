@@ -19,6 +19,7 @@ package ru.mail.polis;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -65,6 +66,11 @@ public class SingleNodeTest extends TestBase {
         return "http://localhost:" + port + "/v0/entity?id=" + id;
     }
 
+    @NotNull
+    private String malformedParameterUrl(@NotNull final String parameter, @NotNull final String value) {
+        return "http://localhost:" + port + "/v0/entity?" + parameter + "=" + value;
+    }
+
     private HttpResponse get(@NotNull final String key) throws IOException {
         return Request.Get(url(key)).execute().returnResponse();
     }
@@ -84,6 +90,14 @@ public class SingleNodeTest extends TestBase {
         assertEquals(400, get("").getStatusLine().getStatusCode());
         assertEquals(400, delete("").getStatusLine().getStatusCode());
         assertEquals(400, upsert("", new byte[]{0}).getStatusLine().getStatusCode());
+    }
+
+    @Test
+    public void malformedParameterRequest() throws Exception{
+        assertEquals(
+                400,
+                Request.Get(malformedParameterUrl(randomId(), randomId())).execute().returnResponse()
+                        .getStatusLine().getStatusCode());
     }
 
     @Test
