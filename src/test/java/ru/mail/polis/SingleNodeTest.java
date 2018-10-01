@@ -67,8 +67,8 @@ public class SingleNodeTest extends TestBase {
     }
 
     @NotNull
-    private String malformedParameterUrl(@NotNull final String parameter, @NotNull final String value) {
-        return "http://localhost:" + port + "/v0/entity?" + parameter + "=" + value;
+    private String absentParameterUrl() {
+        return "http://localhost:" + port + "/v0/entity";
     }
 
     private HttpResponse get(@NotNull final String key) throws IOException {
@@ -93,10 +93,10 @@ public class SingleNodeTest extends TestBase {
     }
 
     @Test
-    public void malformedParameterRequest() throws Exception{
+    public void absentParameterRequest() throws Exception{
         assertEquals(
                 400,
-                Request.Get(malformedParameterUrl(randomId(), randomId())).execute().returnResponse()
+                Request.Get(absentParameterUrl()).execute().returnResponse()
                         .getStatusLine().getStatusCode());
     }
 
