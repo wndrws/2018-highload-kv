@@ -45,14 +45,12 @@ class StartStopTest extends TestBase {
     private KVDao dao;
     private KVService kvService;
 
-
     @BeforeEach
     void beforeEach() throws IOException {
         data = Files.createTempDirectory();
         dao = KVDaoFactory.create(data);
         port = randomPort();
         kvService = KVServiceFactory.create(port, dao);
-
     }
 
     @AfterEach
@@ -78,7 +76,6 @@ class StartStopTest extends TestBase {
             KVServiceFactory.create(port, dao);
             assertThrows(IOException.class, () -> status(port));
         });
-
     }
 
     @Test
@@ -87,7 +84,6 @@ class StartStopTest extends TestBase {
             kvService.start();
             assertEquals(200, status(port));
         });
-
     }
 
     @Test
@@ -99,6 +95,5 @@ class StartStopTest extends TestBase {
             // Should not respond after stop
             assertThrows(IOException.class, () -> status(port));
         });
-
     }
 }

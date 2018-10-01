@@ -111,7 +111,6 @@ class SingleNodeTest extends TestBase {
     @Test
     void insert() {
         assertTimeout(TIMEOUT, () -> {
-
             final String key = randomId();
             final byte[] value = randomValue();
 

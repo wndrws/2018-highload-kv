@@ -104,7 +104,6 @@ class KVDaoTest extends TestBase {
 
         // Check that a2 value is absent
         assertThrows(NoSuchElementException.class, () -> dao.get(a2));
-
     }
 
     @Test
@@ -147,6 +146,5 @@ class KVDaoTest extends TestBase {
         assertArrayEquals(value, dao.get(key.clone()));
         dao.remove(key);
         assertThrows(NoSuchElementException.class, () -> dao.get(key));
-
     }
 }
