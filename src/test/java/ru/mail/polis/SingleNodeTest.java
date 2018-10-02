@@ -95,10 +95,10 @@ class SingleNodeTest extends TestBase {
 
     @Test
     public void absentParameterRequest() throws Exception{
-        assertEquals(
+        assertTimeout(TIMEOUT, () -> assertEquals(
                 400,
                 Request.Get(absentParameterUrl()).execute().returnResponse()
-                        .getStatusLine().getStatusCode());
+                        .getStatusLine().getStatusCode()));
     }
 
     @Test
