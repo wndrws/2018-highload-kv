@@ -4,6 +4,12 @@
 plugins {
     java
     application
+    id("io.franzbecker.gradle-lombok").version("1.14")
+}
+
+lombok {
+    version = "1.18.2"
+    sha256 = ""
 }
 
 repositories {
@@ -13,6 +19,9 @@ repositories {
 dependencies {
     // Annotations for better code documentation
     compile("com.intellij:annotations:12.0")
+
+    // H2 Database for persistance
+    compile("com.h2database:h2:1.4.197")
 
     // JUnit test framework
     testCompile("junit:junit:4.12")
