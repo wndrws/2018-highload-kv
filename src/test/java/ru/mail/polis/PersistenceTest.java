@@ -22,10 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * Persistence tests for {@link KVDao} implementations
@@ -40,10 +37,8 @@ public class PersistenceTest extends TestBase {
 
         // Create, fill and remove storage
         final File data = Files.createTempDirectory();
-        try {
-            final KVDao dao = KVDaoFactory.create(data);
+        try(KVDao dao = KVDaoFactory.create(data)) {
             dao.upsert(key, randomValue());
-            dao.close();
         } finally {
             Files.recursiveDelete(data);
         }
@@ -51,8 +46,7 @@ public class PersistenceTest extends TestBase {
         // Check that the storage is empty
         assertFalse(data.exists());
         assertTrue(data.mkdir());
-        try {
-            final KVDao dao = KVDaoFactory.create(data);
+        try (KVDao dao = KVDaoFactory.create(data)) {
             dao.get(key);
             fail();
         } finally {
@@ -76,6 +70,7 @@ public class PersistenceTest extends TestBase {
             // Recreate dao
             dao = KVDaoFactory.create(data);
             assertArrayEquals(value, dao.get(key));
+            dao.close();
         } finally {
             Files.recursiveDelete(data);
         }
