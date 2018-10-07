@@ -23,10 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.NoSuchElementException;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 /**
  * Persistence tests for {@link KVDao} implementations
@@ -42,7 +40,6 @@ class PersistenceTest extends TestBase {
         // Create, fill and remove storage
         final File data = Files.createTempDirectory();
         try (final KVDao dao = KVDaoFactory.create(data)) {
-
             dao.upsert(key, randomValue());
         } finally {
             Files.recursiveDelete(data);
@@ -71,7 +68,6 @@ class PersistenceTest extends TestBase {
         // Recreate dao
         try (KVDao dao = KVDaoFactory.create(data)) {
             assertArrayEquals(value, dao.get(key));
-            dao.close();
         } finally {
             Files.recursiveDelete(data);
         }
