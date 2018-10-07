@@ -7,3 +7,6 @@
 
 # ...even if they are in subdirectories
 !*/
+
+# Don't ignore resources
+!/src/main/resources/*
