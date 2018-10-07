@@ -1,4 +1,4 @@
-package ru.kspt.highload;
+package ru.kspt.highload.dao;
 
 import lombok.AccessLevel;
 import lombok.Getter;

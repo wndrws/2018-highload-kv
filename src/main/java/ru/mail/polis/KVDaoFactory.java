@@ -17,7 +17,7 @@
 package ru.mail.polis;
 
 import org.jetbrains.annotations.NotNull;
-import ru.kspt.highload.H2Dao;
+import ru.kspt.highload.dao.H2Dao;
 
 import java.io.File;
 import java.io.IOException;

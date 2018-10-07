@@ -1,11 +1,11 @@
-package ru.kspt.highload;
+package ru.kspt.highload.dao;
 
 import lombok.Value;
 
 import java.util.Arrays;
 
 @Value
-public class Key {
+class Key {
     int hash;
 
     byte[] bytes;

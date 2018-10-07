@@ -1,4 +1,4 @@
-package ru.kspt.highload;
+package ru.kspt.highload.dao;
 
 import org.jetbrains.annotations.NotNull;
 import ru.mail.polis.KVDao;
