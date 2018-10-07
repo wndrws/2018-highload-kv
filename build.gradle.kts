@@ -1,3 +1,5 @@
+import org.gradle.api.plugins.internal.SourceSetUtil
+
 // See https://gradle.org and https://github.com/gradle/kotlin-dsl
 
 // Apply the java plugin to add support for Java
@@ -20,8 +22,11 @@ dependencies {
     // Annotations for better code documentation
     compile("com.intellij:annotations:12.0")
 
-    // H2 Database for persistance
-    compile("com.h2database:h2:1.4.197")
+    // H2 Database for persistence
+    runtime("com.h2database:h2:1.4.197")
+
+    // jOOQ to work with SQL
+    compile("org.jooq:jooq:3.11.5")
 
     // JUnit test framework
     testCompile("junit:junit:4.12")
