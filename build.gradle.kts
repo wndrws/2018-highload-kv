@@ -42,8 +42,9 @@ dependencies {
     // Logging
     loggingDependencies.map { compile(it) }
 
-    // JUnit Jupiter test framework
-    testCompile("org.junit.jupiter:junit-jupiter-api:5.3.1")
+    // JUnit 5
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.3.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.3.1")
 
     // HTTP client for unit tests
     testCompile("org.apache.httpcomponents:fluent-hc:4.5.3")
@@ -52,6 +53,7 @@ dependencies {
 tasks {
     "test"(Test::class) {
         maxHeapSize = "128m"
+        useJUnitPlatform()
     }
 }
 
