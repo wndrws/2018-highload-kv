@@ -27,9 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 /**
@@ -86,7 +84,7 @@ class SingleNodeTest extends TestBase {
 
     @Test
     void emptyKey() {
-        assertTimeout(TIMEOUT, () -> {
+        assertTimeoutPreemptively(TIMEOUT, () -> {
             assertEquals(400, get("").getStatusLine().getStatusCode());
             assertEquals(400, delete("").getStatusLine().getStatusCode());
             assertEquals(400, upsert("", new byte[]{0}).getStatusLine().getStatusCode());
@@ -94,8 +92,8 @@ class SingleNodeTest extends TestBase {
     }
 
     @Test
-    public void absentParameterRequest() throws Exception{
-        assertTimeout(TIMEOUT, () -> assertEquals(
+    void absentParameterRequest() throws Exception{
+        assertTimeoutPreemptively(TIMEOUT, () -> assertEquals(
                 400,
                 Request.Get(absentParameterUrl()).execute().returnResponse()
                         .getStatusLine().getStatusCode()));
@@ -103,7 +101,7 @@ class SingleNodeTest extends TestBase {
 
     @Test
     void badRequest() {
-        assertTimeout(TIMEOUT, () -> assertEquals(
+        assertTimeoutPreemptively(TIMEOUT, () -> assertEquals(
                 404,
                 Request.Get(url("/abracadabra")).execute().returnResponse()
                         .getStatusLine().getStatusCode()));
@@ -111,7 +109,7 @@ class SingleNodeTest extends TestBase {
 
     @Test
     void getAbsent() throws Exception {
-        assertTimeout(TIMEOUT, () -> assertEquals(
+        assertTimeoutPreemptively(TIMEOUT, () -> assertEquals(
                 404,
                 get("absent").getStatusLine().getStatusCode()));
     }
@@ -156,7 +154,7 @@ class SingleNodeTest extends TestBase {
 
     @Test
     void lifecycle2keys() {
-        assertTimeout(TIMEOUT, () -> {
+        assertTimeoutPreemptively(TIMEOUT, () -> {
 
             final String key1 = randomId();
             final byte[] value1 = randomValue();
@@ -235,7 +233,7 @@ class SingleNodeTest extends TestBase {
 
     @Test
     void delete() {
-        assertTimeout(TIMEOUT, () -> {
+        assertTimeoutPreemptively(TIMEOUT, () -> {
 
             final String key = randomId();
             final byte[] value = randomValue();
