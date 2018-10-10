@@ -26,9 +26,9 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
-
 
 /**
  * Unit tests for single node {@link KVService} API
@@ -37,17 +37,18 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class SingleNodeTest extends TestBase {
     private static final Duration TIMEOUT = Duration.ofSeconds(3);
-    private static int port;
     private static File data;
     private static KVDao dao;
+    private static String endpoint;
     private static KVService storage;
 
     @BeforeAll
     static void beforeAll() throws IOException {
-        port = randomPort();
+        final int port = randomPort();
         data = Files.createTempDirectory();
         dao = KVDaoFactory.create(data);
-        storage = KVServiceFactory.create(port, dao);
+        endpoint = endpoint(port);
+        storage = KVServiceFactory.create(port, dao, Collections.singleton(endpoint));
         storage.start();
     }
 
@@ -60,12 +61,12 @@ class SingleNodeTest extends TestBase {
 
     @NotNull
     private String url(@NotNull final String id) {
-        return "http://localhost:" + port + "/v0/entity?id=" + id;
+        return endpoint + "/v0/entity?id=" + id;
     }
 
     @NotNull
     private String absentParameterUrl() {
-        return "http://localhost:" + port + "/v0/entity";
+        return endpoint + "/v0/entity";
     }
 
     private HttpResponse get(@NotNull final String key) throws IOException {
@@ -92,7 +93,7 @@ class SingleNodeTest extends TestBase {
     }
 
     @Test
-    void absentParameterRequest() throws Exception{
+    void absentParameterRequest() {
         assertTimeoutPreemptively(TIMEOUT, () -> assertEquals(
                 400,
                 Request.Get(absentParameterUrl()).execute().returnResponse()
@@ -108,7 +109,7 @@ class SingleNodeTest extends TestBase {
     }
 
     @Test
-    void getAbsent() throws Exception {
+    void getAbsent() {
         assertTimeoutPreemptively(TIMEOUT, () -> assertEquals(
                 404,
                 get("absent").getStatusLine().getStatusCode()));
@@ -138,7 +139,6 @@ class SingleNodeTest extends TestBase {
     @Test
     void insertEmpty() {
         assertTimeout(TIMEOUT, () -> {
-
             final String key = randomId();
             final byte[] value = new byte[0];
 
@@ -155,7 +155,6 @@ class SingleNodeTest extends TestBase {
     @Test
     void lifecycle2keys() {
         assertTimeoutPreemptively(TIMEOUT, () -> {
-
             final String key1 = randomId();
             final byte[] value1 = randomValue();
             final String key2 = randomId();
@@ -192,7 +191,6 @@ class SingleNodeTest extends TestBase {
     @Test
     void upsert() {
         assertTimeout(TIMEOUT, () -> {
-
             final String key = randomId();
             final byte[] value1 = randomValue();
             final byte[] value2 = randomValue();
@@ -211,9 +209,36 @@ class SingleNodeTest extends TestBase {
     }
 
     @Test
+    void respectFileFolder() {
+        assertTimeout(TIMEOUT, () -> {
+            final String key = randomId();
+            final byte[] value = randomValue();
+
+            // Insert value
+            assertEquals(201, upsert(key, value).getStatusLine().getStatusCode());
+
+            // Check value
+            final HttpResponse response = get(key);
+            assertEquals(200, response.getStatusLine().getStatusCode());
+            assertArrayEquals(value, payloadOf(response));
+
+            // Remove data and recreate
+            storage.stop();
+            Files.recursiveDelete(data);
+            final int port = randomPort();
+            java.nio.file.Files.createDirectory(data.toPath());
+            endpoint = endpoint(port);
+            storage = KVServiceFactory.create(port, dao, Collections.singleton(endpoint));
+            storage.start();
+
+            // Check absent data
+            assertEquals(404, get(key).getStatusLine().getStatusCode());
+        });
+    }
+
+    @Test
     void upsertEmpty() {
         assertTimeout(TIMEOUT, () -> {
-
             final String key = randomId();
             final byte[] value = randomValue();
             final byte[] empty = new byte[0];
@@ -234,7 +259,6 @@ class SingleNodeTest extends TestBase {
     @Test
     void delete() {
         assertTimeoutPreemptively(TIMEOUT, () -> {
-
             final String key = randomId();
             final byte[] value = randomValue();
 
