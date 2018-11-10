@@ -52,6 +52,6 @@ final class KVServiceFactory {
             throw new IllegalArgumentException("Port out of range");
         }
 
-        return KeyValueStorageService.create(dao, port);
+        return new KeyValueStorageService(port, dao);
     }
 }
