@@ -39,9 +39,6 @@ dependencies {
     // jOOQ to work with SQL
     compile("org.jooq:jooq:3.11.5")
 
-    // one-nio tools
-    compile("ru.odnoklassniki:one-nio:1.0.2")
-
     // Logging
     loggingDependencies.map { compile(it) }
 
