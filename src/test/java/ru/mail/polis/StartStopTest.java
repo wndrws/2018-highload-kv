@@ -138,23 +138,18 @@ class StartStopTest extends TestBase {
     private static void assertNotFinishesIn(final Duration timeout, final Executable executable)
     throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        final ExecutorService executor = Executors.newSingleThreadExecutor();
-        try {
-            executor.submit(() -> {
-                try {
-                    executable.execute();
-                    latch.countDown();
-                } catch (Throwable throwable) {
-                    throwable.printStackTrace();
-                    ExceptionUtils.throwAsUncheckedException(throwable);
-                }
-            });
-            boolean completedBeforeTimeout = latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
-            if (completedBeforeTimeout) {
-                fail("Executable has completed before timeout while should not have been");
+        new Thread(() -> {
+            try {
+                executable.execute();
+                latch.countDown();
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
+                ExceptionUtils.throwAsUncheckedException(throwable);
             }
-        } finally {
-            executor.shutdownNow();
+        }).start();
+        boolean completedBeforeTimeout = latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        if (completedBeforeTimeout) {
+            fail("Executable has completed before timeout while should not have been");
         }
     }
 }
