@@ -11,8 +11,9 @@ public class KeyValueStorageGateway {
 
     private final ReplicaResolver resolver;
 
-    public KeyValueStorageGateway(KeyValueStorageService service, final List<Replica> replicas) {
-        this.localService = service;
+    public KeyValueStorageGateway(final KeyValueStorageService localService,
+            final List<Replica> replicas) {
+        this.localService = localService;
         this.replicas = replicas;
         this.resolver = new ReplicaResolver(replicas);
     }
