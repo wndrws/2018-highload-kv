@@ -3,15 +3,12 @@ package ru.kspt.highload.dao;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
+import org.h2.jdbcx.JdbcConnectionPool;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
 
 import static org.jooq.impl.DSL.*;
 
@@ -31,30 +28,20 @@ class H2Bridge {
     private final String dbFilesDirectory;
 
     @Getter(value = AccessLevel.PRIVATE, lazy = true)
-    private final Connection connection = createConnection();
-
-    @Getter(value = AccessLevel.PRIVATE, lazy = true)
-    private final DSLContext sql = using(connection(), SQLDialect.H2);
-
-    private boolean isClosed = false;
-
-    @SneakyThrows
-    private Connection createConnection() {
-        return DriverManager.getConnection(makeH2ConnectionString());
-    }
+    private final JdbcConnectionPool connectionPool =
+            JdbcConnectionPool.create(makeH2ConnectionString(), "sa", "sa");
 
     private String makeH2ConnectionString() {
         return "jdbc:h2:file:" + dbFilesDirectory + "/kvstorage;"
                 + "INIT=RUNSCRIPT FROM '" + DB_INIT_SCRIPT_PATH + "'";
     }
 
-    @SneakyThrows
     void closeConnection() {
-        if (!isClosed) {
-            connection().commit();
-            connection().close();
-            isClosed = true;
-        }
+        connectionPool().dispose();
+    }
+
+    private DSLContext sql() {
+        return using(connectionPool(), SQLDialect.H2);
     }
 
     void insert(final Key key, final byte[] value) {

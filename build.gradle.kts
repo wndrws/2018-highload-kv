@@ -34,7 +34,7 @@ dependencies {
     compile("com.intellij:annotations:12.0")
 
     // H2 Database for persistence
-    runtime("com.h2database:h2:1.4.197")
+    compile("com.h2database:h2:1.4.197")
 
     // jOOQ to work with SQL
     compile("org.jooq:jooq:3.11.5")
