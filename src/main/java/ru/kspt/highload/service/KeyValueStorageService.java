@@ -6,7 +6,10 @@ import ru.mail.polis.KVDao;
 import ru.mail.polis.KVService;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class KeyValueStorageService implements KVService {
@@ -14,9 +17,22 @@ public class KeyValueStorageService implements KVService {
 
     private final KeyValueStorageController controller;
 
-    public KeyValueStorageService(final int port, final KVDao storage) throws IOException {
+    public KeyValueStorageService(final int port, final KVDao storage, final Set<String> topology)
+    throws IOException {
         this.storage = storage;
-        this.controller = new KeyValueStorageController(this, port);
+        this.controller = new KeyValueStorageController(this, port, parseTopology(topology));
+    }
+
+    private List<Replica> parseTopology(final Set<String> topology) {
+        return topology.stream()
+                .map(KeyValueStorageService::urlWithoutSchema)
+                .map(Replica::create)
+                .collect(Collectors.toList());
+    }
+
+    private static String urlWithoutSchema(final String url) {
+        final String[] parts = url.split("://");
+        return parts.length == 1 ? parts[0] : parts[1];
     }
 
     /**

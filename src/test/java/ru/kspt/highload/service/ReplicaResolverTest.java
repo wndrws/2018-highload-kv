@@ -16,7 +16,7 @@ class ReplicaResolverTest {
             Replica.create("example.com:8082"),
             Replica.create("example.com:8083") };
 
-    private final ReplicaResolver replicaResolver = new ReplicaResolver(allReps);
+    private final ReplicaResolver replicaResolver = new ReplicaResolver(Arrays.asList(allReps));
 
     private final byte[] keyFor1stReplica = new byte[] {1, 2, 2};
 

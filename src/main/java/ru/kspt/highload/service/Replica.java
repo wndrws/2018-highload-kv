@@ -4,12 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.experimental.Accessors;
 import one.nio.http.HttpClient;
 import one.nio.net.ConnectionString;
 
 import java.time.Duration;
 
 @ToString(exclude = "httpClient")
+@Accessors(fluent = true)
 @AllArgsConstructor
 @EqualsAndHashCode(exclude = "httpClient")
 public class Replica {

@@ -3,9 +3,13 @@ package ru.kspt.highload.rest;
 import lombok.extern.slf4j.Slf4j;
 import one.nio.http.*;
 import one.nio.server.AcceptorConfig;
+import ru.kspt.highload.service.KeyValueStorageGateway;
 import ru.kspt.highload.service.KeyValueStorageService;
+import ru.kspt.highload.service.Replica;
+import ru.kspt.highload.service.ReplicationFactor;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import static one.nio.http.Request.METHOD_DELETE;
@@ -16,12 +20,18 @@ import static one.nio.http.Request.METHOD_PUT;
 public class KeyValueStorageController {
     private final KeyValueStorageService service;
 
+    private final KeyValueStorageGateway gateway;
+
     private final HttpServer httpServer;
 
-    public KeyValueStorageController(final KeyValueStorageService service, final int port)
-    throws IOException {
+    private final List<Replica> replicas;
+
+    public KeyValueStorageController(final KeyValueStorageService service, final int port,
+            final List<Replica> replicas) throws IOException {
         this.service = service;
         this.httpServer = new KeyValueStorageHttpServer(createConfig(port), this);
+        this.replicas = replicas;
+        this.gateway = new KeyValueStorageGateway(replicas);
     }
 
     public void startHttpServer() {
@@ -44,20 +54,44 @@ public class KeyValueStorageController {
         return Response.ok("Ready to work!");
     }
 
-    Response entity(final Request request, final String id, final String replicas) {
+    Response entity(final Request request, final String id, final String replicasParam) {
         if (isBadParameter(id)) {
             return Responses.badRequest();
         }
+        try {
+            final ReplicationFactor replicationFactor = parseReplicas(replicasParam);
+            if (replicationFactor.from == 1) {
+                return handleEntity(request, id);
+            } else {
+                return new Response(Response.NOT_IMPLEMENTED, new byte[] {});
+            }
+        } catch (IllegalArgumentException ex) {
+            return Responses.badRequest();
+        }
+    }
+
+    private static boolean isBadParameter(final String param) {
+        return param == null || param.isEmpty();
+    }
+
+    private ReplicationFactor parseReplicas(final String replicasParam) {
+        if (isBadParameter(replicasParam)) {
+            return ReplicationFactor.quorum(replicas.size());
+        } else {
+            final ReplicationFactor result = ReplicationFactor.parse(replicasParam);
+            if (result == null || result.from > replicas.size()) {
+                throw new IllegalArgumentException();
+            } else return result;
+        }
+    }
+
+    private Response handleEntity(Request request, String id) {
         switch (request.getMethod()) {
             case METHOD_GET: return handleGetEntity(id);
             case METHOD_PUT: return handlePutEntity(id, request);
             case METHOD_DELETE: return handleDeleteEntity(id);
             default: return Responses.methodNotAllowed();
         }
-    }
-
-    private boolean isBadParameter(final String param) {
-        return param == null || param.isEmpty();
     }
 
     private Response handleGetEntity(final String entityId) {
