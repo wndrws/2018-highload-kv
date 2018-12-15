@@ -16,8 +16,7 @@ public class H2Dao implements KVDao {
 
     @NotNull
     @Override
-    public byte[] get(@NotNull byte[] keyBytes)
-    throws NoSuchElementException {
+    public byte[] get(@NotNull byte[] keyBytes) throws NoSuchElementException {
         final Key key = new Key(keyBytes);
         if (h2Bridge.contains(key)) {
             return h2Bridge.get(key);

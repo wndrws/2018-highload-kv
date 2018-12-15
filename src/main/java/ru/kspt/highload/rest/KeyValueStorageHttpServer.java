@@ -8,8 +8,7 @@ public class KeyValueStorageHttpServer extends HttpServer {
     private final KeyValueStorageController controller;
 
     KeyValueStorageHttpServer(final HttpServerConfig config,
-            final KeyValueStorageController controller)
-    throws IOException {
+            final KeyValueStorageController controller) throws IOException {
         super(config);
         this.controller = controller;
     }
@@ -27,8 +26,7 @@ public class KeyValueStorageHttpServer extends HttpServer {
     }
 
     @Override
-    public void handleDefault(final Request request, final HttpSession session)
-    throws IOException {
+    public void handleDefault(final Request request, final HttpSession session) throws IOException {
         session.sendResponse(Responses.badRequest());
     }
 }

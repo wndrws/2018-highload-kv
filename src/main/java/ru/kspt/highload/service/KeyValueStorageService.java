@@ -14,8 +14,7 @@ public class KeyValueStorageService implements KVService {
 
     private final KeyValueStorageController controller;
 
-    public KeyValueStorageService(final int port, final KVDao storage)
-    throws IOException {
+    public KeyValueStorageService(final int port, final KVDao storage) throws IOException {
         this.storage = storage;
         this.controller = new KeyValueStorageController(this, port);
     }
