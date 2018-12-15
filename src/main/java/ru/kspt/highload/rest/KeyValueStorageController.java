@@ -18,8 +18,6 @@ import static one.nio.http.Request.METHOD_PUT;
 
 @Slf4j
 public class KeyValueStorageController {
-    private final KeyValueStorageService service;
-
     private final KeyValueStorageGateway gateway;
 
     private final HttpServer httpServer;
@@ -28,10 +26,9 @@ public class KeyValueStorageController {
 
     public KeyValueStorageController(final KeyValueStorageService service, final int port,
             final List<Replica> replicas) throws IOException {
-        this.service = service;
         this.httpServer = new KeyValueStorageHttpServer(createConfig(port), this);
         this.replicas = replicas;
-        this.gateway = new KeyValueStorageGateway(replicas);
+        this.gateway = new KeyValueStorageGateway(service, replicas);
     }
 
     public void startHttpServer() {
@@ -59,12 +56,8 @@ public class KeyValueStorageController {
             return Responses.badRequest();
         }
         try {
-            final ReplicationFactor replicationFactor = parseReplicas(replicasParam);
-            if (replicationFactor.from == 1) {
-                return handleEntity(request, id);
-            } else {
-                return new Response(Response.NOT_IMPLEMENTED, new byte[] {});
-            }
+            final ReplicationFactor replicationFactor = parseReplicationFactor(replicasParam);
+            return handleEntity(request, id, replicationFactor);
         } catch (IllegalArgumentException ex) {
             return Responses.badRequest();
         }
@@ -74,7 +67,7 @@ public class KeyValueStorageController {
         return param == null || param.isEmpty();
     }
 
-    private ReplicationFactor parseReplicas(final String replicasParam) {
+    private ReplicationFactor parseReplicationFactor(final String replicasParam) {
         if (isBadParameter(replicasParam)) {
             return ReplicationFactor.quorum(replicas.size());
         } else {
@@ -85,18 +78,19 @@ public class KeyValueStorageController {
         }
     }
 
-    private Response handleEntity(Request request, String id) {
+    private Response handleEntity(final Request request, final String id,
+            final ReplicationFactor rf) {
         switch (request.getMethod()) {
-            case METHOD_GET: return handleGetEntity(id);
-            case METHOD_PUT: return handlePutEntity(id, request);
-            case METHOD_DELETE: return handleDeleteEntity(id);
+            case METHOD_GET: return handleGetEntity(id, rf);
+            case METHOD_PUT: return handlePutEntity(id, request, rf);
+            case METHOD_DELETE: return handleDeleteEntity(id, rf);
             default: return Responses.methodNotAllowed();
         }
     }
 
-    private Response handleGetEntity(final String entityId) {
+    private Response handleGetEntity(final String entityId, final ReplicationFactor rf) {
         try {
-            byte[] value = service.getEntity(entityId.getBytes());
+            byte[] value = gateway.getEntity(entityId.getBytes(), rf);
             return Response.ok(value);
         } catch (NoSuchElementException ex) {
             return Responses.notFound();
@@ -106,9 +100,10 @@ public class KeyValueStorageController {
         }
     }
 
-    private Response handlePutEntity(final String entityId, final Request request) {
+    private Response handlePutEntity(final String entityId, final Request request,
+            final ReplicationFactor rf) {
         try {
-            service.putEntity(entityId.getBytes(), request.getBody());
+            gateway.putEntity(entityId.getBytes(), request.getBody(), rf);
             return Responses.created();
         } catch (Exception ex) {
             log.error("Exception occurred during PUT", ex);
@@ -116,9 +111,9 @@ public class KeyValueStorageController {
         }
     }
 
-    private Response handleDeleteEntity(final String entityId) {
+    private Response handleDeleteEntity(final String entityId, final ReplicationFactor rf) {
         try {
-            service.deleteEntity(entityId.getBytes());
+            gateway.deleteEntity(entityId.getBytes(), rf);
             return Responses.accepted();
         } catch (Exception ex) {
             log.error("Exception occurred during DELETE", ex);
