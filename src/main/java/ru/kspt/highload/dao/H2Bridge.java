@@ -5,10 +5,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import org.h2.jdbcx.JdbcConnectionPool;
-import org.jooq.DSLContext;
-import org.jooq.Record1;
-import org.jooq.Result;
-import org.jooq.SQLDialect;
+import org.jooq.*;
 
 import static org.jooq.impl.DSL.*;
 
@@ -25,6 +22,8 @@ class H2Bridge {
 
     private final static String VALUE_BYTES_COLUMN = "valueBytes";
 
+    private final static String DELETED_FLAG_COLUMN = "deleted";
+
     private final String dbFilesDirectory;
 
     @Getter(value = AccessLevel.PRIVATE, lazy = true)
@@ -37,6 +36,7 @@ class H2Bridge {
     }
 
     void closeConnection() {
+        exterminateDeletedEntries();
         connectionPool().dispose();
     }
 
@@ -49,6 +49,7 @@ class H2Bridge {
                 .set(field(KEY_HASH_COLUMN), key.getHash())
                 .set(field(KEY_BYTES_COLUMN), key.getBytes())
                 .set(field(VALUE_BYTES_COLUMN), value)
+                .set(field(DELETED_FLAG_COLUMN), false)
                 .execute();
     }
 
@@ -57,21 +58,26 @@ class H2Bridge {
                 .set(field(KEY_HASH_COLUMN), key.getHash())
                 .set(field(KEY_BYTES_COLUMN), key.getBytes())
                 .set(field(VALUE_BYTES_COLUMN), value)
+                .set(field(DELETED_FLAG_COLUMN), false)
                 .where(field(KEY_HASH_COLUMN).eq(key.getHash())
                         .and(field(KEY_BYTES_COLUMN).eq(key.getBytes())))
                 .execute();
     }
 
-    byte[] get(final Key key) {
-        final Result<Record1<Object>> result = sql().select(field(VALUE_BYTES_COLUMN))
+    Value get(final Key key) {
+        final Result<Record2<Object, Object>> result = sql().select(
+                field(VALUE_BYTES_COLUMN), field(DELETED_FLAG_COLUMN))
                 .from(table(TABLE_NAME))
                 .where(field(KEY_BYTES_COLUMN).eq(key.getBytes()))
                 .fetch();
-        return (byte[]) result.getValue(0, 0);
+        final byte[] value = (byte[]) result.getValue(0, 0);
+        final boolean isDeleted = (Boolean) result.getValue(0, 1);
+        return new Value(value, isDeleted);
     }
 
     void remove(final Key key) {
-        sql().deleteFrom(table(TABLE_NAME))
+        sql().update(table(TABLE_NAME))
+                .set(field(DELETED_FLAG_COLUMN), true)
                 .where(field(KEY_BYTES_COLUMN).eq(key.getBytes()))
                 .execute();
     }
@@ -94,5 +100,11 @@ class H2Bridge {
                 .from(table(TABLE_NAME))
                 .where(field(KEY_BYTES_COLUMN).eq(key.getBytes())).fetch();
         return (Integer) equalsKeysCount.getValue(0, 0);
+    }
+
+    private void exterminateDeletedEntries() {
+        sql().deleteFrom(table(TABLE_NAME))
+                .where(field(DELETED_FLAG_COLUMN).eq(true))
+                .execute();
     }
 }

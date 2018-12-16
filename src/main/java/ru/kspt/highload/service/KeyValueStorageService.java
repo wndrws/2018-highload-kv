@@ -3,6 +3,8 @@ package ru.kspt.highload.service;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import ru.kspt.highload.DeletedEntityException;
+import ru.kspt.highload.dao.H2Dao;
+import ru.kspt.highload.dao.Value;
 import ru.kspt.highload.rest.KeyValueStorageController;
 import ru.mail.polis.KVDao;
 import ru.mail.polis.KVService;
@@ -59,7 +61,14 @@ public class KeyValueStorageService implements KVService {
     @Nullable
     byte[] getEntity(final byte[] keyBytes) throws IOException, DeletedEntityException {
         try {
-            return storage.get(keyBytes);
+            if (storage instanceof H2Dao) {
+                final Value value = ((H2Dao) storage).getValue(keyBytes);
+                if (value.isDeleted) throw new DeletedEntityException();
+                return value.bytes;
+            } else {
+                log.warn("Deletion detection is not available since not H2Dao is used");
+                return storage.get(keyBytes);
+            }
         } catch (NoSuchElementException __) {
             return null;
         }
