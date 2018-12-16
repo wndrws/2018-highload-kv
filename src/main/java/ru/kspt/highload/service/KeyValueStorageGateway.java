@@ -69,7 +69,9 @@ public class KeyValueStorageGateway {
             final ReplicaResponse localResponse) {
         final List<ReplicaResponse> replicaResponses =
                 askReplicas(replica -> replica.requestGetEntity(key), key, rf);
-        replicaResponses.add(localResponse);
+        if (localResponse.responseStatus == ResponseStatus.ACK) {
+            replicaResponses.add(localResponse);
+        }
         return decideOnGetEntityResponses(rf.ack, replicaResponses);
     }
 
@@ -133,7 +135,9 @@ public class KeyValueStorageGateway {
             final ReplicaResponse localResponse) {
         final List<ReplicaResponse> replicaResponses =
                 askReplicas(replica -> replica.requestPutEntity(key, value), key, rf);
-        replicaResponses.add(localResponse);
+        if (localResponse.responseStatus == ResponseStatus.ACK) {
+            replicaResponses.add(localResponse);
+        }
         if (replicaResponses.size() < rf.ack) {
             throw new NotEnoughReplicasException();
         }
@@ -160,7 +164,9 @@ public class KeyValueStorageGateway {
             final ReplicaResponse localResponse) {
         final List<ReplicaResponse> replicaResponses =
                 askReplicas(replica -> replica.requestDeleteEntity(key), key, rf);
-        replicaResponses.add(localResponse);
+        if (localResponse.responseStatus == ResponseStatus.ACK) {
+            replicaResponses.add(localResponse);
+        }
         if (replicaResponses.size() < rf.ack) {
             throw new NotEnoughReplicasException();
         }
