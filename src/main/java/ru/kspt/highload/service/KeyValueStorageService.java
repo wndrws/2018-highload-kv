@@ -59,18 +59,15 @@ public class KeyValueStorageService implements KVService {
     }
 
     @Nullable
-    byte[] getEntity(final byte[] keyBytes) throws IOException, DeletedEntityException {
-        try {
-            if (storage instanceof H2Dao) {
-                final Value value = ((H2Dao) storage).getValue(keyBytes);
-                if (value.isDeleted) throw new DeletedEntityException();
-                return value.bytes;
-            } else {
-                log.warn("Deletion detection is not available since not H2Dao is used");
-                return storage.get(keyBytes);
-            }
-        } catch (NoSuchElementException __) {
-            return null;
+    byte[] getEntity(final byte[] keyBytes) throws IOException, NoSuchElementException,
+            DeletedEntityException {
+        if (storage instanceof H2Dao) {
+            final Value value = ((H2Dao) storage).getValue(keyBytes);
+            if (value.isDeleted) throw new DeletedEntityException();
+            return value.bytes;
+        } else {
+            log.warn("Deletion detection is not available since not H2Dao is used");
+            return storage.get(keyBytes);
         }
     }
 

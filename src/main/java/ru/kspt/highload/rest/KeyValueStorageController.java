@@ -1,7 +1,10 @@
 package ru.kspt.highload.rest;
 
 import lombok.extern.slf4j.Slf4j;
-import one.nio.http.*;
+import one.nio.http.HttpServer;
+import one.nio.http.HttpServerConfig;
+import one.nio.http.Request;
+import one.nio.http.Response;
 import one.nio.server.AcceptorConfig;
 import ru.kspt.highload.DeletedEntityException;
 import ru.kspt.highload.NotEnoughReplicasException;
@@ -14,9 +17,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import static one.nio.http.Request.METHOD_DELETE;
-import static one.nio.http.Request.METHOD_GET;
-import static one.nio.http.Request.METHOD_PUT;
+import static one.nio.http.Request.*;
 
 @Slf4j
 public class KeyValueStorageController {
@@ -34,11 +35,13 @@ public class KeyValueStorageController {
     }
 
     public void startHttpServer() {
+        gateway.start();
         httpServer.start();
     }
 
     public void stopHttpServer() {
         httpServer.stop();
+        gateway.stop();
     }
 
     private static HttpServerConfig createConfig(final int port) {
@@ -99,8 +102,7 @@ public class KeyValueStorageController {
         }
     }
 
-    private Response handleGetEntity(final String entityId, final ReplicationFactor rf)
-    throws IOException {
+    private Response handleGetEntity(final String entityId, final ReplicationFactor rf) {
         try {
             byte[] value = gateway.getEntity(entityId, rf);
             return Response.ok(value);
