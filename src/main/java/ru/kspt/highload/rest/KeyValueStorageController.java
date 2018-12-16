@@ -112,7 +112,7 @@ public class KeyValueStorageController {
     }
 
     private Response handlePutEntity(final String entityId, final Request request,
-            final ReplicationFactor rf) throws IOException {
+            final ReplicationFactor rf) {
         gateway.putEntity(entityId, request.getBody(), rf);
         return Responses.created();
     }
