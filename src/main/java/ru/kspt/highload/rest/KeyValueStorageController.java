@@ -117,8 +117,7 @@ public class KeyValueStorageController {
         return Responses.created();
     }
 
-    private Response handleDeleteEntity(final String entityId, final ReplicationFactor rf)
-    throws IOException {
+    private Response handleDeleteEntity(final String entityId, final ReplicationFactor rf) {
         gateway.deleteEntity(entityId, rf);
         return Responses.accepted();
     }
