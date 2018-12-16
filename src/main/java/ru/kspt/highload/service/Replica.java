@@ -41,7 +41,7 @@ public class Replica {
 
     private HttpClient createHttpClient() {
         return new HttpClient(new ConnectionString(URL_SCHEMA + host + ":" + port),
-                INTERNAL_REQUESTS_HTTP_HEADER + ":" + INTERNAL_REQUESTS_HTTP_HEADER_VALUE);
+                INTERNAL_REQUESTS_HTTP_HEADER + ": " + INTERNAL_REQUESTS_HTTP_HEADER_VALUE);
     }
 
     void start() {
