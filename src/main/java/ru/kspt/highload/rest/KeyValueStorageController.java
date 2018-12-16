@@ -93,7 +93,7 @@ public class KeyValueStorageController {
     }
 
     private Response handleEntity(final Request request, final String id,
-            final ReplicationFactor rf) throws IOException {
+            final ReplicationFactor rf) {
         switch (request.getMethod()) {
             case METHOD_GET: return handleGetEntity(id, rf);
             case METHOD_PUT: return handlePutEntity(id, request, rf);
