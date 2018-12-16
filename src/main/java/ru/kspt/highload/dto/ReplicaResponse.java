@@ -1,13 +1,13 @@
 package ru.kspt.highload.dto;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.Nullable;
 
-@Value
+@AllArgsConstructor
 public class ReplicaResponse {
-    public ResponseStatus responseStatus;
+    public final ResponseStatus responseStatus;
 
-    public PayloadStatus payloadStatus;
+    public final PayloadStatus payloadStatus;
 
     @Nullable
     public byte[] payload;
