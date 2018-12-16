@@ -3,6 +3,8 @@ package ru.kspt.highload.rest;
 import lombok.extern.slf4j.Slf4j;
 import one.nio.http.*;
 import one.nio.server.AcceptorConfig;
+import ru.kspt.highload.DeletedEntityException;
+import ru.kspt.highload.NotEnoughReplicasException;
 import ru.kspt.highload.service.KeyValueStorageGateway;
 import ru.kspt.highload.service.KeyValueStorageService;
 import ru.kspt.highload.service.Replica;
@@ -51,15 +53,24 @@ public class KeyValueStorageController {
         return Response.ok("Ready to work!");
     }
 
-    Response entity(final Request request, final String id, final String replicasParam) {
+    Response entity(final Request request, final String id, final String replicasParam,
+            final boolean isInternal) {
         if (isBadParameter(id)) {
             return Responses.badRequest();
         }
         try {
-            final ReplicationFactor replicationFactor = parseReplicationFactor(replicasParam);
+            final ReplicationFactor replicationFactor =
+                    isInternal ? ReplicationFactor.single() : parseReplicationFactor(replicasParam);
             return handleEntity(request, id, replicationFactor);
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException __) {
             return Responses.badRequest();
+        } catch (DeletedEntityException __) {
+            return isInternal ? Responses.noContent() : Responses.notFound();
+        } catch (NotEnoughReplicasException __) {
+            return Responses.notEnoughReplicas();
+        } catch (Exception ex) {
+            log.error("Unexpected exception occurred!", ex);
+            return Responses.internalServerError();
         }
     }
 
@@ -79,7 +90,7 @@ public class KeyValueStorageController {
     }
 
     private Response handleEntity(final Request request, final String id,
-            final ReplicationFactor rf) {
+            final ReplicationFactor rf) throws IOException {
         switch (request.getMethod()) {
             case METHOD_GET: return handleGetEntity(id, rf);
             case METHOD_PUT: return handlePutEntity(id, request, rf);
@@ -88,36 +99,25 @@ public class KeyValueStorageController {
         }
     }
 
-    private Response handleGetEntity(final String entityId, final ReplicationFactor rf) {
+    private Response handleGetEntity(final String entityId, final ReplicationFactor rf)
+    throws IOException {
         try {
-            byte[] value = gateway.getEntity(entityId.getBytes(), rf);
+            byte[] value = gateway.getEntity(entityId, rf);
             return Response.ok(value);
         } catch (NoSuchElementException ex) {
             return Responses.notFound();
-        } catch (Exception ex) {
-            log.error("Exception occurred during GET", ex);
-            return Responses.internalServerError();
         }
     }
 
     private Response handlePutEntity(final String entityId, final Request request,
-            final ReplicationFactor rf) {
-        try {
-            gateway.putEntity(entityId.getBytes(), request.getBody(), rf);
-            return Responses.created();
-        } catch (Exception ex) {
-            log.error("Exception occurred during PUT", ex);
-            return Responses.internalServerError();
-        }
+            final ReplicationFactor rf) throws IOException {
+        gateway.putEntity(entityId, request.getBody(), rf);
+        return Responses.created();
     }
 
-    private Response handleDeleteEntity(final String entityId, final ReplicationFactor rf) {
-        try {
-            gateway.deleteEntity(entityId.getBytes(), rf);
-            return Responses.accepted();
-        } catch (Exception ex) {
-            log.error("Exception occurred during DELETE", ex);
-            return Responses.internalServerError();
-        }
+    private Response handleDeleteEntity(final String entityId, final ReplicationFactor rf)
+    throws IOException {
+        gateway.deleteEntity(entityId, rf);
+        return Responses.accepted();
     }
 }

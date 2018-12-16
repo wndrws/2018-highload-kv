@@ -4,6 +4,9 @@ import one.nio.http.*;
 
 import java.io.IOException;
 
+import static ru.kspt.highload.service.Replica.INTERNAL_REQUESTS_HTTP_HEADER;
+import static ru.kspt.highload.service.Replica.INTERNAL_REQUESTS_HTTP_HEADER_VALUE;
+
 public class KeyValueStorageHttpServer extends HttpServer {
     private final KeyValueStorageController controller;
 
@@ -21,8 +24,11 @@ public class KeyValueStorageHttpServer extends HttpServer {
     @Path("/v0/entity")
     public Response handleEntity(final Request request,
             @Param("id") final String id,
-            @Param("replicas") final String replicas) {
-        return controller.entity(request, id, replicas);
+            @Param("replicas") final String replicas,
+            @Header(INTERNAL_REQUESTS_HTTP_HEADER) final String internal) {
+        final boolean isInternal =
+                internal != null && internal.equals(INTERNAL_REQUESTS_HTTP_HEADER_VALUE);
+        return controller.entity(request, id, replicas, isInternal);
     }
 
     @Override

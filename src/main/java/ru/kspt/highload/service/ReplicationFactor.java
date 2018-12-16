@@ -26,4 +26,8 @@ public class ReplicationFactor {
     public static ReplicationFactor quorum(final int from) {
         return new ReplicationFactor(from / 2 + 1, from);
     }
+
+    public static ReplicationFactor single() {
+        return new ReplicationFactor(1, 1);
+    }
 }

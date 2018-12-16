@@ -1,6 +1,7 @@
 package ru.kspt.highload.dao;
 
 import org.jetbrains.annotations.NotNull;
+import ru.kspt.highload.DeletedEntityException;
 import ru.mail.polis.KVDao;
 
 import java.io.File;
@@ -16,13 +17,14 @@ public class H2Dao implements KVDao {
 
     @NotNull
     @Override
-    public byte[] get(@NotNull byte[] keyBytes) throws NoSuchElementException {
+    public byte[] get(@NotNull byte[] keyBytes)
+    throws NoSuchElementException, DeletedEntityException {
         final Key key = new Key(keyBytes);
         if (h2Bridge.contains(key)) {
             return h2Bridge.get(key);
         } else {
             throw new NoSuchElementException();
-        }
+        } // TODO throw DeletedEntityException when needed
     }
 
     @Override

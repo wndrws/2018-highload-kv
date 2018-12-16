@@ -20,6 +20,13 @@ class Responses {
     }
 
     /**
+     * HTTP code: 204
+     */
+    Response noContent() {
+        return new Response(Response.NO_CONTENT, Response.EMPTY);
+    }
+
+    /**
      * HTTP code: 400
      */
     Response badRequest() {
@@ -45,5 +52,12 @@ class Responses {
      */
     Response internalServerError() {
         return new Response(Response.INTERNAL_ERROR, Response.EMPTY);
+    }
+
+    /**
+     * HTTP code: 504
+     */
+    Response notEnoughReplicas() {
+        return new Response("504 Not Enough Replicas", Response.EMPTY);
     }
 }

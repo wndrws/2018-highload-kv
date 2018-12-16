@@ -1,6 +1,8 @@
 package ru.kspt.highload.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
+import ru.kspt.highload.DeletedEntityException;
 import ru.kspt.highload.rest.KeyValueStorageController;
 import ru.mail.polis.KVDao;
 import ru.mail.polis.KVService;
@@ -17,8 +19,11 @@ public class KeyValueStorageService implements KVService {
 
     private final KeyValueStorageController controller;
 
+    private final int localPort;
+
     public KeyValueStorageService(final int port, final KVDao storage, final Set<String> topology)
     throws IOException {
+        this.localPort = port;
         this.storage = storage;
         this.controller = new KeyValueStorageController(this, port, parseTopology(topology));
     }
@@ -51,15 +56,24 @@ public class KeyValueStorageService implements KVService {
         controller.stopHttpServer();
     }
 
-    public byte[] getEntity(final byte[] keyBytes) throws NoSuchElementException, IOException {
-        return storage.get(keyBytes);
+    @Nullable
+    byte[] getEntity(final byte[] keyBytes) throws IOException, DeletedEntityException {
+        try {
+            return storage.get(keyBytes);
+        } catch (NoSuchElementException __) {
+            return null;
+        }
     }
 
-    public void putEntity(final byte[] keyBytes, final byte[] entity) throws Exception {
+    void putEntity(final byte[] keyBytes, final byte[] entity) throws IOException {
         storage.upsert(keyBytes, entity);
     }
 
-    public void deleteEntity(final byte[] keyBytes) throws Exception {
+    void deleteEntity(final byte[] keyBytes) throws IOException {
         storage.remove(keyBytes);
+    }
+
+    boolean isNotSelfReplica(final Replica replica) {
+       return replica.port != localPort;
     }
 }
