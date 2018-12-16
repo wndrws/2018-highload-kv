@@ -69,7 +69,7 @@ public class Replica {
         try {
             return response.get(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException __) {
-            log.warn("{} request to replica {} timed out (timeout = {})!", name, this, TIMEOUT);
+            log.warn("{} request to the replica {} timed out (timeout = {})!", name, this, TIMEOUT);
             return ReplicaResponse.fail();
         } catch (InterruptedException __) {
             log.warn(Thread.currentThread().getName() + " was interrupted");

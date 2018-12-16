@@ -1,13 +1,13 @@
 package ru.kspt.highload.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import ru.kspt.highload.DeletedEntityException;
 import ru.kspt.highload.NotEnoughReplicasException;
 import ru.kspt.highload.dto.PayloadStatus;
 import ru.kspt.highload.dto.ReplicaResponse;
 import ru.kspt.highload.dto.ResponseStatus;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -86,14 +86,30 @@ public class KeyValueStorageGateway {
     private byte[] decideOnGetEntityResponses(final int requestedAcksCount,
             final List<ReplicaResponse> replicaResponses) {
         if (replicaResponses.size() >= requestedAcksCount) {
-            for (ReplicaResponse response : replicaResponses) {
-                // WARNING: No conflict resolution implemented!
-                if (response.payloadStatus == PayloadStatus.FOUND) return response.payload;
+            byte[] result = findEntity(replicaResponses);
+            if (result != null) {
+                return result;
+            } else {
+                throw new NoSuchElementException();
             }
-            throw new NoSuchElementException();
         } else {
             throw new NotEnoughReplicasException();
         }
+    }
+
+    @Nullable
+    private byte[] findEntity(final List<ReplicaResponse> replicaResponses) {
+        byte[] result = null;
+        for (ReplicaResponse response : replicaResponses) {
+            switch (response.payloadStatus) {
+                case FOUND:
+                    result = response.payload; // WARNING: No conflict resolution implemented!
+                    break;
+                case DELETED:
+                    throw new DeletedEntityException();
+            }
+        }
+        return result;
     }
 
     public void putEntity(final String key, final byte[] entity, final ReplicationFactor rf) {
@@ -123,7 +139,7 @@ public class KeyValueStorageGateway {
         }
     }
 
-    public void deleteEntity(final String key, final ReplicationFactor rf) throws IOException {
+    public void deleteEntity(final String key, final ReplicationFactor rf) {
         final ReplicaResponse localResponse = deleteEntityLocally(key);
         if (rf.from != 1 || localResponse.responseStatus != ResponseStatus.ACK) {
             deleteEntityRemotely(key, rf, localResponse);
