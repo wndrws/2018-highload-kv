@@ -22,23 +22,28 @@ public class KeyValueStorageGateway {
 
     private final ReplicaResolver resolver;
 
+    private final TaskScheduler taskScheduler;
+
     public KeyValueStorageGateway(final KeyValueStorageService localService,
             final List<Replica> replicas) {
         this.localService = localService;
         this.replicas = replicas;
         this.resolver = new ReplicaResolver(replicas);
+        this.taskScheduler = new TaskScheduler();
     }
 
     public void start() {
+        taskScheduler.start();
         replicas.forEach(Replica::start);
     }
 
     public void stop() {
         replicas.forEach(Replica::stop);
+        taskScheduler.stop();
     }
 
     public byte[] getEntity(final String key, final ReplicationFactor rf)
-    throws NoSuchElementException, DeletedEntityException, NotEnoughReplicasException {
+            throws NoSuchElementException, DeletedEntityException, NotEnoughReplicasException {
         final ReplicaResponse localResponse = getEntityLocally(key);
         if (rf.from == 1 && localResponse.responseStatus == ResponseStatus.ACK) {
             if (localResponse.payloadStatus == PayloadStatus.FOUND) {
@@ -77,12 +82,13 @@ public class KeyValueStorageGateway {
 
     private List<ReplicaResponse> askReplicas(final Function<Replica, ReplicaResponse> request,
             final String key, final ReplicationFactor rf) {
-        return Arrays.stream(resolver.chooseReplicasForKey(key.getBytes(), rf.from))
+        final List<Replica> chosenReplicas = Arrays
+                .stream(resolver.chooseReplicasForKey(key.getBytes(), rf.from))
                 .filter(localService::isNotSelfReplica)
                 .limit(rf.from - 1) // since one request was already served locally
-                .map(request)
-                .filter(it -> it.responseStatus == ResponseStatus.ACK)
                 .collect(Collectors.toList());
+        taskScheduler.schedule(request, chosenReplicas);
+        return taskScheduler.getNeededAckedResponses(rf.ack - 1);
     }
 
     private byte[] decideOnGetEntityResponses(final int requestedAcksCount,
