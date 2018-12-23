@@ -13,3 +13,4 @@
 
 # Don't ignore resources
 !/src/main/resources/*
+!/imgs/*
