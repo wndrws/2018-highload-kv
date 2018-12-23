@@ -8,5 +8,8 @@
 # ...even if they are in subdirectories
 !*/
 
+# ...and not Markdown files
+!*.md
+
 # Don't ignore resources
 !/src/main/resources/*
