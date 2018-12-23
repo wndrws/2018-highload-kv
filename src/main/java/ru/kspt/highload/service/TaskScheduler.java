@@ -21,18 +21,31 @@ public class TaskScheduler {
 
     private ExecutorService executor;
 
+    private ScheduledExecutorService abandonedTasksCleaner;
+
     public void start() {
         executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
                 .setNameFormat(this.getClass().getSimpleName() + "-pool-%d").build());
+        abandonedTasksCleaner = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setNameFormat("TasksCleaner").build());
+        abandonedTasksCleaner.scheduleAtFixedRate(
+                this::clearAbandonedTasks, 5, 5, TimeUnit.SECONDS);
+    }
+
+    private void clearAbandonedTasks() {
+        abandoned.forEach(f -> f.cancel(true));
+        abandoned.clear();
     }
 
     public void stop() {
         tasks.values().forEach(f -> f.drainFuturesAndClear(abandoned));
         tasks.clear();
-        abandoned.stream().filter(f -> !f.isDone()).forEach(f -> f.cancel(true));
-        abandoned.clear();
+        clearAbandonedTasks();
         if (executor != null) {
             executor.shutdownNow();
+        }
+        if (abandonedTasksCleaner != null) {
+            abandonedTasksCleaner.shutdownNow();
         }
     }
 
