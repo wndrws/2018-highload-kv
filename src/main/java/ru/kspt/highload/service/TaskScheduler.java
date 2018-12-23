@@ -1,5 +1,6 @@
 package ru.kspt.highload.service;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import ru.kspt.highload.dto.ReplicaResponse;
 import ru.kspt.highload.dto.ResponseStatus;
@@ -7,6 +8,8 @@ import ru.kspt.highload.dto.ResponseStatus;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -16,43 +19,52 @@ import java.util.stream.Collectors;
 public class TaskScheduler {
     private static final Duration TIMEOUT = Duration.ofSeconds(1);
 
-    private final List<Future<ReplicaResponse>> tasks = new ArrayList<>();
+    private final Map<Long, Task> tasks = new ConcurrentHashMap<>();
 
-    private final AtomicInteger acksGathered = new AtomicInteger(0);
+    private final Queue<Future<ReplicaResponse>> abandoned = new ConcurrentLinkedQueue<>();
 
     private ExecutorService executor;
 
     public void start() {
-        executor = Executors.newCachedThreadPool();
+        executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
+                .setNameFormat(this.getClass().getSimpleName() + "-pool-%d").build());
     }
 
     public void stop() {
+        tasks.clear();
+        abandoned.stream().filter(f -> !f.isDone()).forEach(f -> f.cancel(true));
         if (executor != null) {
             executor.shutdownNow();
         }
     }
 
     void schedule(final Function<Replica, ReplicaResponse> request, final List<Replica> replicas) {
+        final long currentThreadId = Thread.currentThread().getId();
+        final Task task = new Task();
         for (Replica replica : replicas) {
-            tasks.add(executor.submit(() -> {
+            task.responses.add(executor.submit(() -> {
                 final ReplicaResponse response = request.apply(replica);
                 if (response.responseStatus == ResponseStatus.ACK) {
-                    acksGathered.incrementAndGet();
+                    task.acksGathered.incrementAndGet();
                 }
                 return response;
             }));
         }
+        if (tasks.containsKey(currentThreadId)) {
+            abandoned.addAll(tasks.get(currentThreadId).responses);
+        }
+        tasks.put(currentThreadId, task);
     }
 
     List<ReplicaResponse> getNeededAckedResponses(final int acksNeeded) {
-        awaitCompletion(acksNeeded);
-        final List<ReplicaResponse> ackedResponses = tasks.stream()
+        final long currentThreadId = Thread.currentThread().getId();
+        awaitCompletion(acksNeeded, currentThreadId);
+        final List<ReplicaResponse> responses = tasks.get(currentThreadId).responses.stream()
                 .filter(Future::isDone)
                 .map(this::getResult)
                 .filter(r -> r.responseStatus == ResponseStatus.ACK)
                 .collect(Collectors.toList());
-        clearTasks();
-        return ackedResponses;
+        return responses;
     }
 
     private ReplicaResponse getResult(final Future<ReplicaResponse> future) {
@@ -72,27 +84,27 @@ public class TaskScheduler {
         }
     }
 
-    private void awaitCompletion(final int acksNeeded) {
+    private void awaitCompletion(final int acksNeeded, final long currentThreadId) {
         while (!Thread.currentThread().isInterrupted()) {
-            if (isEverythingCompleted() || acksGathered.get() >= acksNeeded) {
-                break;
+            if (isEverythingCompleted(currentThreadId) ||
+                    tasks.get(currentThreadId).acksGathered.get() >= acksNeeded) {
+                return;
             }
         }
+        log.warn(Thread.currentThread().getName() + " was interrupted");
     }
 
-    private boolean isEverythingCompleted() {
+    private boolean isEverythingCompleted(final long threadId) {
         boolean everythingCompleted = true;
-        for (Future<ReplicaResponse> task : tasks) {
-            everythingCompleted &= task.isDone();
+        for (Future<ReplicaResponse> future : tasks.get(threadId).responses) {
+            everythingCompleted &= future.isDone();
         }
         return everythingCompleted;
     }
 
-    private void clearTasks() {
-        tasks.stream()
-                .filter(f -> !f.isDone())
-                .forEach(f -> f.cancel(true));
-        tasks.clear();
-        acksGathered.set(0);
+    private static class Task {
+        final List<Future<ReplicaResponse>> responses = new ArrayList<>();
+
+        final AtomicInteger acksGathered = new AtomicInteger(0);
     }
 }

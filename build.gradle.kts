@@ -39,6 +39,9 @@ dependencies {
     // jOOQ to work with SQL
     compile("org.jooq:jooq:3.11.5")
 
+    // Guava for the best
+    compile("com.google.guava:guava:23.1-jre")
+
     // Logging
     loggingDependencies.map { compile(it) }
 
@@ -46,9 +49,6 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.3.1")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.3.1")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.3.1")
-
-    // Guava for tests
-    testCompile("com.google.guava:guava:23.1-jre")
 }
 
 tasks {

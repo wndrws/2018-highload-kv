@@ -1,5 +1,6 @@
 package ru.kspt.highload.service;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
@@ -46,7 +47,8 @@ public class Replica {
 
     void start() {
         httpClient = createHttpClient();
-        executor = Executors.newSingleThreadExecutor();
+        executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
+                .setNameFormat(this.toString() + "-executor").build());
     }
 
     void stop() {
