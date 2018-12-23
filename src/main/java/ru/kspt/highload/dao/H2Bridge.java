@@ -7,6 +7,8 @@ import lombok.experimental.Accessors;
 import org.h2.jdbcx.JdbcConnectionPool;
 import org.jooq.*;
 
+import java.util.NoSuchElementException;
+
 import static org.jooq.impl.DSL.*;
 
 @RequiredArgsConstructor
@@ -64,15 +66,19 @@ class H2Bridge {
                 .execute();
     }
 
-    Value get(final Key key) {
+    Value get(final Key key) throws NoSuchElementException {
         final Result<Record2<Object, Object>> result = sql().select(
                 field(VALUE_BYTES_COLUMN), field(DELETED_FLAG_COLUMN))
                 .from(table(TABLE_NAME))
                 .where(field(KEY_BYTES_COLUMN).eq(key.getBytes()))
                 .fetch();
-        final byte[] value = (byte[]) result.getValue(0, 0);
-        final boolean isDeleted = (Boolean) result.getValue(0, 1);
-        return new Value(value, isDeleted);
+        if (result.isNotEmpty()) {
+            final byte[] value = (byte[]) result.getValue(0, 0);
+            final boolean isDeleted = (Boolean) result.getValue(0, 1);
+            return new Value(value, isDeleted);
+        } else {
+            throw new NoSuchElementException();
+        }
     }
 
     void remove(final Key key) {

@@ -27,12 +27,7 @@ public class H2Dao implements KVDao {
 
     @NotNull
     public Value getValue(@NotNull byte[] keyBytes) throws NoSuchElementException {
-        final Key key = new Key(keyBytes);
-        if (h2Bridge.contains(key)) {
-            return h2Bridge.get(key);
-        } else {
-            throw new NoSuchElementException();
-        }
+        return h2Bridge.get(new Key(keyBytes));
     }
 
     @Override
@@ -48,9 +43,7 @@ public class H2Dao implements KVDao {
     @Override
     public void remove(@NotNull byte[] keyBytes) {
         final Key key = new Key(keyBytes);
-        if (h2Bridge.contains(key)) {
-            h2Bridge.remove(key);
-        }
+        h2Bridge.remove(key);
     }
 
     @Override
