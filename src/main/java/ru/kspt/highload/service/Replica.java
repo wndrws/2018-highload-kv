@@ -47,8 +47,8 @@ public class Replica {
 
     void start() {
         httpClient = createHttpClient();
-        executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
-                .setNameFormat(this.toString() + "-executor").build());
+        executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
+                .setNameFormat(this.toString() + "-pool-%d").build());
     }
 
     void stop() {
