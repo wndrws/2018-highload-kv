@@ -1,27 +1,23 @@
 package ru.kspt.highload.service;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ru.kspt.highload.dto.ReplicaResponse;
 import ru.kspt.highload.dto.ResponseStatus;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
+@RequiredArgsConstructor
 public class TaskScheduler {
-    private static final Duration TIMEOUT = Duration.ofSeconds(1);
-
     private final Map<Long, Task> tasks = new ConcurrentHashMap<>();
 
-    private final Queue<Future<ReplicaResponse>> abandoned = new ConcurrentLinkedQueue<>();
+    private final Queue<Future<?>> abandoned = new ConcurrentLinkedQueue<>();
+
+    private final int maxReplicasCount;
 
     private ExecutorService executor;
 
@@ -31,8 +27,10 @@ public class TaskScheduler {
     }
 
     public void stop() {
+        tasks.values().forEach(f -> f.drainFuturesAndClear(abandoned));
         tasks.clear();
         abandoned.stream().filter(f -> !f.isDone()).forEach(f -> f.cancel(true));
+        abandoned.clear();
         if (executor != null) {
             executor.shutdownNow();
         }
@@ -40,71 +38,67 @@ public class TaskScheduler {
 
     void schedule(final Function<Replica, ReplicaResponse> request, final List<Replica> replicas) {
         final long currentThreadId = Thread.currentThread().getId();
-        final Task task = new Task();
+        final Task task = renewTaskForThread(currentThreadId);
         for (Replica replica : replicas) {
-            task.responses.add(executor.submit(() -> {
+            task.futureResponses.add(executor.submit(() -> {
                 final ReplicaResponse response = request.apply(replica);
-                if (response.responseStatus == ResponseStatus.ACK) {
-                    task.acksGathered.incrementAndGet();
-                }
-                return response;
+                task.responses.add(response);
             }));
         }
-        if (tasks.containsKey(currentThreadId)) {
-            abandoned.addAll(tasks.get(currentThreadId).responses);
-        }
-        tasks.put(currentThreadId, task);
     }
 
-    List<ReplicaResponse> getNeededAckedResponses(final int acksNeeded) {
+    private Task renewTaskForThread(final long threadId) {
+        if (tasks.containsKey(threadId)) {
+            final Task task = tasks.get(threadId);
+            task.drainFuturesAndClear(abandoned);
+            return task;
+        } else {
+            final Task task = new Task(maxReplicasCount);
+            tasks.put(threadId, task);
+            return task;
+        }
+    }
+
+    List<ReplicaResponse> getEnoughResponses(final ReplicationFactor replicationFactor) {
         final long currentThreadId = Thread.currentThread().getId();
-        awaitCompletion(acksNeeded, currentThreadId);
-        final List<ReplicaResponse> responses = tasks.get(currentThreadId).responses.stream()
-                .filter(Future::isDone)
-                .map(this::getResult)
-                .filter(r -> r.responseStatus == ResponseStatus.ACK)
-                .collect(Collectors.toList());
-        return responses;
-    }
-
-    private ReplicaResponse getResult(final Future<ReplicaResponse> future) {
         try {
-            return future.get(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (InterruptedException __) {
+            return awaitCompletion(currentThreadId, replicationFactor);
+        } catch (InterruptedException e) {
             log.warn(Thread.currentThread().getName() + " was interrupted");
-            log.error("The interrupted Future must have been already completed!");
-            Thread.currentThread().interrupt();
-            return ReplicaResponse.fail();
-        } catch (TimeoutException e) {
-            log.error("The was timeout on Future that must have been already completed!");
-            return ReplicaResponse.fail();
-        } catch (ExecutionException e) {
-            log.error("Unexpected error in " + this.getClass().getSimpleName(), e);
-            return ReplicaResponse.fail();
+            return new ArrayList<>();
         }
     }
 
-    private void awaitCompletion(final int acksNeeded, final long currentThreadId) {
+    private List<ReplicaResponse> awaitCompletion(final long currentThreadId,
+            final ReplicationFactor rf) throws InterruptedException {
+        final List<ReplicaResponse> ackedResponses = new ArrayList<>();
+        int totalGathered = 0;
         while (!Thread.currentThread().isInterrupted()) {
-            if (isEverythingCompleted(currentThreadId) ||
-                    tasks.get(currentThreadId).acksGathered.get() >= acksNeeded) {
-                return;
+            final ReplicaResponse response = tasks.get(currentThreadId).responses.take();
+            totalGathered++;
+            if (response.responseStatus == ResponseStatus.ACK) {
+                ackedResponses.add(response);
+                if (ackedResponses.size() == rf.ack) return ackedResponses;
             }
+            if (totalGathered == rf.from) return ackedResponses;
         }
-        log.warn(Thread.currentThread().getName() + " was interrupted");
-    }
-
-    private boolean isEverythingCompleted(final long threadId) {
-        boolean everythingCompleted = true;
-        for (Future<ReplicaResponse> future : tasks.get(threadId).responses) {
-            everythingCompleted &= future.isDone();
-        }
-        return everythingCompleted;
+        log.warn(Thread.currentThread().getName() + " was interrupted on awaiting completion");
+        return new ArrayList<>();
     }
 
     private static class Task {
-        final List<Future<ReplicaResponse>> responses = new ArrayList<>();
+        private final List<Future<?>> futureResponses = new ArrayList<>();
 
-        final AtomicInteger acksGathered = new AtomicInteger(0);
+        private final BlockingQueue<ReplicaResponse> responses;
+
+        Task(final int from) {
+            responses = new ArrayBlockingQueue<>(from);
+        }
+
+        void drainFuturesAndClear(final Collection<Future<?>> sink) {
+            sink.addAll(futureResponses);
+            futureResponses.clear();
+            responses.clear();
+        }
     }
 }

@@ -29,7 +29,7 @@ public class KeyValueStorageGateway {
         this.localService = localService;
         this.replicas = replicas;
         this.resolver = new ReplicaResolver(replicas);
-        this.taskScheduler = new TaskScheduler();
+        this.taskScheduler = new TaskScheduler(replicas.size());
     }
 
     public void start() {
@@ -88,7 +88,7 @@ public class KeyValueStorageGateway {
                 .limit(rf.from - 1) // since one request was already served locally
                 .collect(Collectors.toList());
         taskScheduler.schedule(request, chosenReplicas);
-        return taskScheduler.getNeededAckedResponses(rf.ack - 1);
+        return taskScheduler.getEnoughResponses(new ReplicationFactor(rf.ack - 1, rf.from -1));
     }
 
     private byte[] decideOnGetEntityResponses(final int requestedAcksCount,
